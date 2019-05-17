@@ -1,4 +1,5 @@
-# Clear the screen and hold it for 3 seconds
+# -*- coding: utf-8 -*-
+
 import curses
 import random
 import time

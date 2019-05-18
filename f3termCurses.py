@@ -3,7 +3,7 @@
 import curses
 import random
 import time
-import sqlite3
+import json
 import string
 import threading
 import pygame.mixer
@@ -46,42 +46,21 @@ def readDBParameters(checkInterval=2):
             break
         if not is_db_updating:
             is_db_updating = True
-            conn = sqlite3.connect(r'ft.db')
-            req = conn.cursor()
-            req.execute('SELECT name,value FROM params')
-            params = req.fetchall()
-            conn.close()
-            for data in params:
-                if data[0] == "msgBody":
-                    val = data[1].split("\n")
-                else:
-                    if data[1].isdigit():
-                        val = int(data[1])
-                    else:
-                        if data[1].upper() == "YES":
-                            val = True
-                        elif data[1].upper() == "NO":
-                            val = False
-                        else:
-                            val = data[1]
-                db_parameters.update({data[0]:val})
+            with open('ftjSON.txt', 'r') as f:
+                db_parameters = json.load(f) 
             is_db_updating = False
         time.sleep(checkInterval)
 
 def updateDBParameters(parameters):
     # Принимает словарь, где ключ - поле в базе, значение ключа - значение, которое нужно записать в базу.
     global is_db_updating
+    global db_parameters
     while is_db_updating:
         pass
     try:
         is_db_updating = True
-        conn = sqlite3.connect('ft.db')
-        req = conn.cursor()
-        print(parameters)
-        for par in parameters.keys():
-            req.execute("UPDATE params SET value = '{1}' WHERE name='{0}'".format(par,parameters[par]))
-        conn.commit()
-        conn.close()
+        with open('ftjSON.txt', 'w') as f:
+            json.dump(db_parameters, f, ensure_ascii=False) 
     except Exception as err:
         print(err)
     finally:

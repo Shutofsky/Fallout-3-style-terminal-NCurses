@@ -27,12 +27,14 @@ def load_str():
         return fullstr
 
 def initCurses():
+    global curses
     curses.initscr()
     curses.start_color()
-    curses.init_pair(1, 10, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_BLACK, 10)
+    curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_GREEN)
     curses.noecho()
-    curses.noraw()
+    curses.raw()
     curses.curs_set(2)
 
 def readDBParameters(checkInterval=2):
@@ -273,7 +275,7 @@ def outScreen(parName, delayAfter=2):
             continue
         if db_parameters['isSound']:
             prtSnd.play(loops=0, maxtime=int(myDelay))
-        fullScreenWin.addch(y, x, ch, curses.color_pair(1))
+        fullScreenWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
         time.sleep(myDelay / 1000)
         fullScreenWin.refresh()
         x += 1
@@ -321,7 +323,7 @@ def hackScreen():
             continue
         if db_parameters['isSound']:
             prtSnd.play(loops=0, maxtime=int(myDelay))
-        hackServWin.addch(y, x, ch, curses.color_pair(1))
+        hackServWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
         time.sleep(myDelay / 1000)
         hackServWin.refresh()
         x += 1
@@ -338,7 +340,7 @@ def hackScreen():
                     myDelay = delayTime / 4
                 if db_parameters['isSound']:
                     prtSnd.play(loops=0, maxtime=int(myDelay))
-                hackMainWin.addch(y, (colStr*24)+x, ch, curses.color_pair(1))
+                hackMainWin.addstr(y, (colStr*24)+x, ch, curses.color_pair(1)|curses.A_BOLD)
                 time.sleep(myDelay / 1000)
                 hackMainWin.refresh()
                 x += 1
@@ -349,14 +351,14 @@ def hackScreen():
                     myDelay = delayTime / 4
                 if db_parameters['isSound']:
                     prtSnd.play(loops=0, maxtime=int(myDelay))
-                hackMainWin.addch(y, (colStr*24)+x, ch, curses.color_pair(1))
+                hackMainWin.addstr(y, (colStr*24)+x, ch, curses.color_pair(1)|curses.A_BOLD)
                 time.sleep(myDelay / 1000)
                 hackMainWin.refresh()
                 x += 1
                 i += 10
             y += 1
         colStr += 1
-    hackCursorWin.addch(16,1,'>',curses.color_pair(1))
+    hackCursorWin.addstr(16,1,'>',curses.color_pair(1)|curses.A_BOLD)
     hackCursorWin.refresh()
     x = 8
     y = 0
@@ -378,7 +380,7 @@ def hackScreen():
                 return
         f = False
         key = hackMainWin.getch()
-        if key == curses.KEY_LEFT:
+        if key == curses.KEY_LEFT or key == 260:
             f = True
             if x == 8:
                 x = 43
@@ -386,7 +388,7 @@ def hackScreen():
                 x = 19
             else:
                 x -= 1
-        if key == curses.KEY_RIGHT:
+        if key == curses.KEY_RIGHT or key == 261:
             f = True
             if x == 19:
                 x = 32
@@ -394,13 +396,13 @@ def hackScreen():
                 x = 8
             else:
                 x += 1
-        if key == curses.KEY_UP:
+        if key == curses.KEY_UP or key == 259:
             f = True
             if y == 0:
                 y = 16
             else:
                 y -= 1
-        if key == curses.KEY_DOWN:
+        if key == curses.KEY_DOWN or key == 258:
             f = True
             if y == 16:
                 y = 0
@@ -415,7 +417,7 @@ def hackScreen():
                     auxStr.append(selGroup + ' ['+str(dWord)+' OF '+str(db_parameters['wordLength'])+']')
                     yAux = 0
                     for tStr in auxStr:
-                        hackAuxWin.addstr(yAux, 0, tStr+'\n', curses.color_pair(1))
+                        hackAuxWin.addstr(yAux, 0, tStr+'\n', curses.color_pair(1)|curses.A_BOLD)
                         yAux += 1
                     hackAuxWin.refresh()
                     numTries -= 1
@@ -429,7 +431,7 @@ def hackScreen():
                                 yS += 1
                                 xS = 0
                                 continue
-                            hackServWin.addch(yS, xS, ch, curses.color_pair(1))
+                            hackServWin.addstr(yS, xS, ch, curses.color_pair(1)|curses.A_BOLD)
                             xS += 1
                         hackServWin.refresh()
                         hackMainWin.move(y, x)
@@ -449,9 +451,9 @@ def hackScreen():
                 # print(fullStr)
                 (xSC, ySC) = getStrCoords(startPos+1)
                 i = 0
-                hackMainWin.addch(ySC, xSC-1, fullStr[startPos], curses.color_pair(1))
+                hackMainWin.addstr(ySC, xSC-1, fullStr[startPos], curses.color_pair(1)|curses.A_BOLD)
                 while i<len(selGroup)-1:
-                    hackMainWin.addch(ySC, xSC + i, '.', curses.color_pair(1))
+                    hackMainWin.addstr(ySC, xSC + i, '.', curses.color_pair(1)|curses.A_BOLD)
                     i += 1
                 r = random.randint(1,10)
                 if r > 1:   # 9 из 10 случаев - удаляем слово
@@ -459,13 +461,13 @@ def hackScreen():
                     i = dPos
                     while i < dPos + db_parameters['wordLength']:
                         (dlX, dlY) = getStrCoords(i)
-                        hackMainWin.addch(dlY, dlX, '.', curses.color_pair(1))
+                        hackMainWin.addstr(dlY, dlX, '.', curses.color_pair(1)|curses.A_BOLD)
                         i += 1
                     auxStr.pop(0)
                     auxStr.append('DUMMY REMOVED')
                     yAux = 0
                     for tStr in auxStr:
-                        hackAuxWin.addstr(yAux, 0, tStr+'\n', curses.color_pair(1))
+                        hackAuxWin.addstr(yAux, 0, tStr+'\n', curses.color_pair(1)|curses.A_BOLD)
                         yAux += 1
                     hackAuxWin.refresh()
                     hackMainWin.move(y, x)
@@ -480,14 +482,14 @@ def hackScreen():
                             yS += 1
                             xS = 0
                             continue
-                        hackServWin.addch(yS, xS, ch, curses.color_pair(1))
+                        hackServWin.addstr(yS, xS, ch, curses.color_pair(1)|curses.A_BOLD)
                         xS += 1
                     hackServWin.refresh()
                     auxStr.pop(0)
                     auxStr.append('ATTEMPTS RESTORED')
                     yAux = 0
                     for tStr in auxStr:
-                        hackAuxWin.addstr(yAux, 0, tStr+'\n', curses.color_pair(1))
+                        hackAuxWin.addstr(yAux, 0, tStr+'\n', curses.color_pair(1)|curses.A_BOLD)
                         yAux += 1
                     hackAuxWin.refresh()
                 cheatFlag = False
@@ -500,8 +502,8 @@ def hackScreen():
                 xHL = 0
                 while i <= endPos:
                     (hlX, hlY) = getStrCoords(i)
-                    hackMainWin.addch(hlY, hlX, fullStr[i], curses.color_pair(1))
-                    hackHLWin.addstr(0, xHL, ' ', curses.color_pair(1))
+                    hackMainWin.addstr(hlY, hlX, fullStr[i], curses.color_pair(1)|curses.A_BOLD)
+                    hackHLWin.addstr(0, xHL, ' ', curses.color_pair(1)|curses.A_BOLD)
                     i += 1
                     xHL += 1
                 cheatFlag = False
@@ -531,9 +533,9 @@ def hackScreen():
                 i = startPos
                 while i <= endPos:
                     (hlX, hlY) = getStrCoords(i)
-                    hackMainWin.addch(hlY, hlX, fullStr[i], curses.color_pair(2))
+                    hackMainWin.addstr(hlY, hlX, fullStr[i], curses.color_pair(1)|curses.A_REVERSE)
                     i += 1
-                hackHLWin.addstr(0, 0, selGroup, curses.color_pair(1))
+                hackHLWin.addstr(0, 0, selGroup, curses.color_pair(1)|curses.A_BOLD)
                 hackMainWin.refresh()
                 hackHLWin.refresh()
             hackMainWin.move(y, x)

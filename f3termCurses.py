@@ -51,7 +51,7 @@ def readDBParameters(checkInterval=2):
             is_db_updating = False
         time.sleep(checkInterval)
 
-def updateDBParameters(parameters):
+def updateDBParameters():
     # Принимает словарь, где ключ - поле в базе, значение ключа - значение, которое нужно записать в базу.
     global is_db_updating
     global db_parameters
@@ -359,6 +359,7 @@ def hackScreen():
                 return
         f = False
         key = hackMainWin.getch()
+        print(key)
         if key == curses.KEY_LEFT or key == 260:
             f = True
             if x == 8:
@@ -387,7 +388,7 @@ def hackScreen():
                 y = 0
             else:
                 y += 1
-        if key == 10:  # Enter
+        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter
             # Выбор позиции
             if wordFlag:
                 dWord = compareWords(selGroup, pwd)
@@ -415,19 +416,18 @@ def hackScreen():
                         hackServWin.refresh()
                         hackMainWin.move(y, x)
                     else:   # Блокировка
-                        updateDBParameters({"isLocked":"YES"})
                         db_parameters["isLocked"] = True
+                        updateDBParameters()
                         time.sleep(1)
                         return
                 else:   # Терминал успешно взломан
-                    updateDBParameters({"isHacked":"YES"})
                     db_parameters["isHacked"] = True
+                    updateDBParameters()
+                    hackMainWin.clear()
+                    hackMainWin.refresh()
                     return
             elif cheatFlag: # Был найден чит
-                # print(fullStr)
                 fullStr = delFromStr(fullStr, startPos+1, endPos+1)
-                # print('======')
-                # print(fullStr)
                 (xSC, ySC) = getStrCoords(startPos+1)
                 i = 0
                 hackMainWin.addstr(ySC, xSC-1, fullStr[startPos], curses.color_pair(1)|curses.A_BOLD)
@@ -519,6 +519,60 @@ def hackScreen():
                 hackHLWin.refresh()
             hackMainWin.move(y, x)
 
+def readScreen():
+    global db_parameters
+    global delayTime
+    myDelay = delayTime
+    readServWin = curses.newwin(4, 80, 0, 0)
+    readServWin.clear()
+    readServWin.nodelay(True)
+    # readMainWin = curses.newwin(21, 80, 4, 0)
+    # readMainWin.clear()
+    x = 0
+    y = 0
+    for ch in db_parameters['mainHeader']:
+        key = readServWin.getch()
+        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
+            myDelay = delayTime/4
+        if ch == '\n':
+            y += 1
+            x = 0
+            continue
+        if db_parameters['isSound']:
+            prtSnd.play(loops=0, maxtime=int(myDelay))
+        readServWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
+        time.sleep(myDelay / 1000)
+        readServWin.refresh()
+        x += 1
+
+    with open ('f3Doc.txt', 'r') as fh:
+        outTxtStr = fh.read()
+    outTxtLst = outTxtStr.split('\n')
+    readTextPad = curses.newpad(int(len(outTxtLst)/20 + 1)*20, 80)
+    for str in outTxtLst:
+        readTextPad.addstr(str+'\n', curses.color_pair(1)|curses.A_BOLD)
+    readTextPad.refresh(0, 0, 4, 0, 23, 78)
+    curses.curs_set(0)
+    readServWin.nodelay(False)
+    readServWin.keypad(True)
+    rowPos = 0
+    f = False
+    while True:
+        readServWin.move(0, 0)
+        kb = readServWin.getch()
+        if kb == curses.KEY_NPAGE or kb == 338:
+            if rowPos < int(len(outTxtLst)/20)*20:
+                rowPos += 20
+                f = True
+        if kb == curses.KEY_PPAGE or kb == 339:
+            if rowPos > 0:
+                rowPos -= 20
+                f = True
+        if f:
+            readTextPad.refresh(rowPos, 0, 4, 0, 23, 78)
+
+            f = False
+
 def startTerminal():
     #   Основной игровой цикл.
     global db_parameters
@@ -554,10 +608,10 @@ def startTerminal():
                 previous_state = "Locked"
         elif db_parameters["isHacked"]:
             if previous_state != "Hacked":
-                outScreen('mainHeader', 3)
                 previous_state = "Hacked"
-            # Здесь вызываем функцию после взлома
-            forceClose = True   # Закрываем всё
+                readScreen()
+                # Здесь вызываем функцию после взлома
+                forceClose = True   # Закрываем всё
         else:
             # Взлом.
             previous_state = "Normal"

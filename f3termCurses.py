@@ -359,7 +359,6 @@ def hackScreen():
                 return
         f = False
         key = hackMainWin.getch()
-        print(key)
         if key == curses.KEY_LEFT or key == 260:
             f = True
             if x == 8:

@@ -1,5 +1,5 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 import curses
 import random
 import time
@@ -13,10 +13,9 @@ forceClose = False
 is_db_updating = False
 db_updated = False
 dbCheckInterval = 2
-delayTime = 50
+delayTime = 40
 
 start_time = time.time()
-
 
 def millis():
     return (time.time() - start_time) * 1000.0
@@ -237,6 +236,7 @@ def outScreen(parName, delayAfter=2):
     global db_parameters
     global delayTime
     global prtSnd
+    curses.curs_set(2)
     fullScreenWin = curses.newwin(24, 80, 0, 0)
     fullScreenWin.clear()
     fullScreenWin.refresh()
@@ -269,6 +269,7 @@ def hackScreen():
     global delayTime
     global wrdSnd
     global prtSnd
+    curses.curs_set(2)
     (wordDict, lenDict) = loadWords(db_parameters['wordLength'])  # отладочная загрузка словаря
     (pwd, wList, fullStr) = genString(db_parameters['wordsPrinted'], 408, wordDict)
     # fullStr = load_str()
@@ -518,9 +519,11 @@ def hackScreen():
                 hackHLWin.refresh()
             hackMainWin.move(y, x)
 
-def readScreen():
+def readScreen(fName):
     global db_parameters
+    global db_updated
     global delayTime
+    curses.curs_set(2)
     myDelay = delayTime
     readServWin = curses.newwin(4, 80, 0, 0)
     readServWin.clear()
@@ -543,8 +546,7 @@ def readScreen():
         time.sleep(myDelay / 1000)
         readServWin.refresh()
         x += 1
-
-    with open ('f3Doc.txt', 'r') as fh:
+    with open(fName, 'r') as fh:
         outTxtStr = fh.read()
     outTxtLst = outTxtStr.split('\n')
     readTextPad = curses.newpad(int(len(outTxtLst)/20 + 1)*20, 80)
@@ -555,8 +557,18 @@ def readScreen():
     readServWin.nodelay(False)
     readServWin.keypad(True)
     rowPos = 0
-    f = False
+    mssTime = millis()
     while True:
+        mscTime = millis()
+        if (mscTime >= (mssTime + 3000)):
+            mssTime = mscTime
+            # Читаем базу
+            if not db_parameters["isPowerOn"] or db_parameters["isLocked"] or not db_parameters["isHacked"]:
+                return
+            if db_updated:
+                db_updated = False
+                return
+        f = False
         readServWin.move(0, 0)
         kb = readServWin.getch()
         if kb == curses.KEY_NPAGE or kb == 338:
@@ -567,10 +579,102 @@ def readScreen():
             if rowPos > 0:
                 rowPos -= 20
                 f = True
+        if kb == curses.KEY_BACKSPACE or kb == 27:
+            readServWin.clear()
+            readServWin.refresh()
+            menuScreen()
         if f:
             readTextPad.refresh(rowPos, 0, 4, 0, 23, 78)
-
             f = False
+
+def menuScreen():
+    global db_parameters
+    global db_updated
+    global delayTime
+    curses.curs_set(2)
+    menuSel = []
+    myDelay = delayTime
+    menuServWin = curses.newwin(4, 80, 0, 0)
+    menuServWin.clear()
+    menuServWin.refresh()
+    menuServWin.nodelay(True)
+    menuMainWin = curses.newwin(21, 80, 4, 0)
+    menuMainWin.clear()
+    menuMainWin.refresh()
+    x = 0
+    y = 0
+    for ch in db_parameters['menuHeader']:
+        key = menuServWin.getch()
+        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
+            myDelay = delayTime/4
+        if ch == '\n':
+            y += 1
+            x = 0
+            continue
+        if db_parameters['isSound']:
+            prtSnd.play(loops=0, maxtime=int(myDelay))
+        menuServWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
+        time.sleep(myDelay / 1000)
+        menuServWin.refresh()
+        x += 1
+    maxLen= 0
+    rows = 0
+    for menuItem in db_parameters['textMenu'].keys():
+        if maxLen < len(menuItem):
+            maxLen = len(menuItem)
+        rows += 1
+    y = int((21 - rows * 2) / 2)
+    x = int((80 - maxLen)/2)
+    for menuItem in db_parameters['textMenu'].keys():
+        menuMainWin.addstr(y, x, menuItem, curses.color_pair(1) | curses.A_BOLD)
+        menuSel.append(menuItem)
+        y += 2
+    menuPos = 0
+    y = int((21 - rows * 2) / 2)
+    menuMainWin.addstr(y, x, menuSel[0], curses.color_pair(1) | curses.A_REVERSE)
+    menuMainWin.refresh()
+    menuMainWin.keypad(True)
+    curses.curs_set(0)
+    mssTime = millis()
+    while True:
+        mscTime = millis()
+        if (mscTime >= (mssTime + 3000)):
+            mssTime = mscTime
+            # Читаем базу
+            if not db_parameters["isPowerOn"] or db_parameters["isLocked"] or not db_parameters["isHacked"]:
+                return
+            if db_updated:
+                db_updated = False
+                return
+        f = False
+        key = menuMainWin.getch()
+        if key == curses.KEY_UP or key == 259:
+            menuMainWin.addstr(y, x, menuSel[menuPos], curses.color_pair(1) | curses.A_BOLD)
+            f = True
+            if menuPos == 0:
+                menuPos = len(menuSel) - 1
+            else:
+                menuPos -= 1
+        if key == curses.KEY_DOWN or key == 258:
+            menuMainWin.addstr(y, x, menuSel[menuPos], curses.color_pair(1) | curses.A_BOLD)
+            f = True
+            if menuPos == len(menuSel) - 1:
+                menuPos = 0
+            else:
+                menuPos += 1
+        if key == curses.KEY_ENTER or key == 10 or key == 13:  # Enter
+            # Выбор позиции
+            menuServWin.clear()
+            menuServWin.refresh()
+            menuMainWin.clear()
+            menuMainWin.refresh()
+            readScreen(db_parameters['textMenu'][menuSel[menuPos]])
+        if f:
+            y = int((21 - rows * 2) / 2) + 2*menuPos
+            menuMainWin.addstr(y, x, menuSel[menuPos], curses.color_pair(1) | curses.A_REVERSE)
+            menuMainWin.refresh()
+            f = False
+
 
 def startTerminal():
     #   Основной игровой цикл.
@@ -608,9 +712,8 @@ def startTerminal():
         elif db_parameters["isHacked"]:
             if previous_state != "Hacked":
                 previous_state = "Hacked"
-                readScreen()
-                # Здесь вызываем функцию после взлома
-                forceClose = True   # Закрываем всё
+                menuScreen()  # Здесь вызываем функцию после взлома
+                # forceClose = True   # Закрываем всё
         else:
             # Взлом.
             previous_state = "Normal"

@@ -46,7 +46,7 @@ def readDBParameters(checkInterval=2):
             break
         if not is_db_updating:
             is_db_updating = True
-            with open('ftjSON.txt', 'r') as f:
+            with open('ftjSON.txt', 'r', encoding='utf8') as f:
                 db_parameters = json.load(f) 
             is_db_updating = False
         time.sleep(checkInterval)
@@ -59,7 +59,7 @@ def updateDBParameters():
         pass
     try:
         is_db_updating = True
-        with open('ftjSON.txt', 'w') as f:
+        with open('ftjSON.txt', 'w', encoding='utf8') as f:
             json.dump(db_parameters, f, ensure_ascii=False) 
     except Exception as err:
         print(err)

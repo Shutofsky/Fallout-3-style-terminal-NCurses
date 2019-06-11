@@ -527,7 +527,7 @@ def readScreen(fName):
     outTxtLst = outTxtStr.split('\n')
     readTextPad = curses.newpad(int(len(outTxtLst)/20 + 1)*20, 80)
     for str in outTxtLst:
-        readTextPad.addstr(str+'\n', curses.color_pair(1)|curses.A_BOLD)
+        readTextPad.addstr((str+'\n').encode('utf-8'), curses.color_pair(1)|curses.A_BOLD)
     readTextPad.refresh(0, 0, 4+db_parameters['deltaY'], db_parameters['deltaX'], 23, 78)
     curses.curs_set(0)
     readServWin.nodelay(False)

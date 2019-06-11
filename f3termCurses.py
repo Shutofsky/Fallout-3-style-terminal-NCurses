@@ -522,7 +522,7 @@ def readScreen(fName):
     readServWin.clear()
     readServWin.refresh()
     typeWriter(readServWin, db_parameters['mainHeader'], delayTime)
-    with open(fName, 'r') as fh:
+    with open(fName, 'r', encoding='utf8') as fh:
         outTxtStr = fh.read()
     outTxtLst = outTxtStr.split('\n')
     readTextPad = curses.newpad(int(len(outTxtLst)/20 + 1)*20, 80)

@@ -6,7 +6,7 @@ import time
 import json
 import string
 import threading
-import pygame.mixer
+#import pygame.mixer
 
 db_parameters = dict()
 forceClose = False
@@ -14,6 +14,7 @@ is_db_updating = False
 db_updated = False
 dbCheckInterval = 2
 delayTime = 40
+lockTimeOutStart = 0
 
 start_time = time.time()
 
@@ -232,32 +233,40 @@ def delRandomWord(wordList, allStr):
     allStr = allStr.replace(word, '.'*len(word))
     return (startPos, wordList, allStr)
 
+def typeWriter(winOut, textOut, delayTime):
+    global db_parameters
+    curses.curs_set(2)
+    winOut.clear()
+    winOut.refresh()
+    winOut.nodelay(True)
+    myDelay = delayTime
+    x = 0
+    y = 0
+    for ch in textOut:
+        key = winOut.getch()
+        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
+            myDelay = delayTime/4
+        if ch == '\n':
+            y += 1
+            x = 0
+            continue
+#        if db_parameters['isSound']:
+#            prtSnd.play(loops=0, maxtime=int(myDelay))
+        winOut.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
+        time.sleep(myDelay / 1000)
+        winOut.refresh()
+        x += 1
+
 def outScreen(parName, delayAfter=2):
     global db_parameters
     global delayTime
     global prtSnd
     curses.curs_set(2)
-    fullScreenWin = curses.newwin(24, 80, 0, 0)
+    fullScreenWin = curses.newwin(24, 80, db_parameters["deltaY"], db_parameters["deltaX"])
     fullScreenWin.clear()
     fullScreenWin.refresh()
     fullScreenWin.nodelay(True)
-    myDelay = delayTime
-    x = 0
-    y = 0
-    for ch in db_parameters[parName]:
-        key = fullScreenWin.getch()
-        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
-            myDelay = delayTime/4
-        if ch == '\n':
-            y+=1
-            x = 0
-            continue
-        if db_parameters['isSound']:
-            prtSnd.play(loops=0, maxtime=int(myDelay))
-        fullScreenWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
-        time.sleep(myDelay / 1000)
-        fullScreenWin.refresh()
-        x += 1
+    typeWriter(fullScreenWin, db_parameters[parName], delayTime)
     if delayAfter > 0:
         time.sleep(delayAfter)
         fullScreenWin.clear()
@@ -279,36 +288,21 @@ def hackScreen():
     #         'DODDERER', 'CAROLINA', 'WILLHITE', 'UNDERJAW']
     auxStr = [' '*32, ' '*32, ' '*32, ' '*32, ' '*32, ' '*32, ' '*32, ' '*32, \
               ' '*32, ' '*32, ' '*32, ' '*32, ' '*32, ' '*32, ' '*32, ' '*32]
-    x = 0
-    y = 1
-    myDelay = delayTime
-    hackServWin = curses.newwin(7, 80, 0, 0)
-    hackMainWin = curses.newwin(18, 44, 7, 0)
-    hackCursorWin = curses.newwin(18, 3, 7, 44)
-    hackAuxWin = curses.newwin(17, 33, 7, 47)
-    hackHLWin = curses.newwin(1, 33, 23, 47)
+    hackServWin = curses.newwin(7, 80, db_parameters["deltaY"], db_parameters["deltaX"])
+    hackMainWin = curses.newwin(18, 44, 7+db_parameters["deltaY"], db_parameters["deltaX"])
+    hackCursorWin = curses.newwin(18, 3, 7+db_parameters["deltaY"], 44+db_parameters["deltaX"])
+    hackAuxWin = curses.newwin(17, 33, 7+db_parameters["deltaY"], 47+db_parameters["deltaX"])
+    hackHLWin = curses.newwin(1, 33, 23+db_parameters["deltaY"], 47+db_parameters["deltaY"])
     hackServWin.clear()
     hackServWin.nodelay(True)
     hackMainWin.clear()
     hackMainWin.nodelay(True)
     triesAst = '* ' * db_parameters['attempts']
     numTries = db_parameters['attempts']
-    for ch in db_parameters['hackHeader'].format(numTries, triesAst):
-        key = hackServWin.getch()
-        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
-            myDelay = delayTime/4
-        if ch == '\n':
-            y+=1
-            x = 0
-            continue
-        if db_parameters['isSound']:
-            prtSnd.play(loops=0, maxtime=int(myDelay))
-        hackServWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
-        time.sleep(myDelay / 1000)
-        hackServWin.refresh()
-        x += 1
+    typeWriter(hackServWin, db_parameters['hackHeader'].format(numTries, triesAst), delayTime)
     startHex = random.randint(0x1A00, 0xFA00)
     colStr = 0
+    myDelay = delayTime
     while colStr<2:
         y = 0
         while y < 17:
@@ -318,8 +312,8 @@ def hackScreen():
                 key = hackMainWin.getch()
                 if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
                     myDelay = delayTime / 4
-                if db_parameters['isSound']:
-                    prtSnd.play(loops=0, maxtime=int(myDelay))
+#                if db_parameters['isSound']:
+#                    prtSnd.play(loops=0, maxtime=int(myDelay))
                 hackMainWin.addstr(y, (colStr*24)+x, ch, curses.color_pair(1)|curses.A_BOLD)
                 time.sleep(myDelay / 1000)
                 hackMainWin.refresh()
@@ -329,8 +323,8 @@ def hackScreen():
                 key = hackMainWin.getch()
                 if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
                     myDelay = delayTime / 4
-                if db_parameters['isSound']:
-                    prtSnd.play(loops=0, maxtime=int(myDelay))
+#                if db_parameters['isSound']:
+#                    prtSnd.play(loops=0, maxtime=int(myDelay))
                 hackMainWin.addstr(y, (colStr*24)+x, ch, curses.color_pair(1)|curses.A_BOLD)
                 time.sleep(myDelay / 1000)
                 hackMainWin.refresh()
@@ -474,8 +468,8 @@ def hackScreen():
                 cheatFlag = False
                 hackMainWin.move(y, x)
         if f:
-            if db_parameters['isSound']:
-                prtSnd.play(loops=0, maxtime=int(myDelay))
+#            if db_parameters['isSound']:
+#                prtSnd.play(loops=0, maxtime=int(myDelay))
             if wordFlag or cheatFlag:
                 i = startPos
                 xHL = 0
@@ -506,9 +500,9 @@ def hackScreen():
                 endPos = endCPos + 1
                 selGroup = selCGroup
             if wordFlag or cheatFlag:
-                if db_parameters['isSound']:
-                    prtSnd.stop()
-                    wrdSnd.play(loops=0)
+#                if db_parameters['isSound']:
+#                    prtSnd.stop()
+#                    wrdSnd.play(loops=0)
                 i = startPos
                 while i <= endPos:
                     (hlX, hlY) = getStrCoords(i)
@@ -524,35 +518,17 @@ def readScreen(fName):
     global db_updated
     global delayTime
     curses.curs_set(2)
-    myDelay = delayTime
-    readServWin = curses.newwin(4, 80, 0, 0)
+    readServWin = curses.newwin(4, 80, db_parameters["deltaY"], db_parameters["deltaX"])
     readServWin.clear()
-    readServWin.nodelay(True)
-    # readMainWin = curses.newwin(21, 80, 4, 0)
-    # readMainWin.clear()
-    x = 0
-    y = 0
-    for ch in db_parameters['mainHeader']:
-        key = readServWin.getch()
-        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
-            myDelay = delayTime/4
-        if ch == '\n':
-            y += 1
-            x = 0
-            continue
-        if db_parameters['isSound']:
-            prtSnd.play(loops=0, maxtime=int(myDelay))
-        readServWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
-        time.sleep(myDelay / 1000)
-        readServWin.refresh()
-        x += 1
+    readServWin.refresh()
+    typeWriter(readServWin, db_parameters['mainHeader'], delayTime)
     with open(fName, 'r') as fh:
         outTxtStr = fh.read()
     outTxtLst = outTxtStr.split('\n')
     readTextPad = curses.newpad(int(len(outTxtLst)/20 + 1)*20, 80)
     for str in outTxtLst:
         readTextPad.addstr(str+'\n', curses.color_pair(1)|curses.A_BOLD)
-    readTextPad.refresh(0, 0, 4, 0, 23, 78)
+    readTextPad.refresh(0, 0, 4+db_parameters['deltaY'], db_parameters['deltaX'], 23, 78)
     curses.curs_set(0)
     readServWin.nodelay(False)
     readServWin.keypad(True)
@@ -584,7 +560,7 @@ def readScreen(fName):
             readServWin.refresh()
             menuScreen()
         if f:
-            readTextPad.refresh(rowPos, 0, 4, 0, 23, 78)
+            readTextPad.refresh(rowPos, 0, 4+db_parameters['deltaY'], db_parameters['deltaX'], 23, 78)
             f = False
 
 def menuScreen():
@@ -594,29 +570,14 @@ def menuScreen():
     curses.curs_set(2)
     menuSel = []
     myDelay = delayTime
-    menuServWin = curses.newwin(4, 80, 0, 0)
+    menuServWin = curses.newwin(4, 80, db_parameters['deltaY'], db_parameters['deltaX'])
     menuServWin.clear()
     menuServWin.refresh()
     menuServWin.nodelay(True)
-    menuMainWin = curses.newwin(21, 80, 4, 0)
+    menuMainWin = curses.newwin(21, 80, 4+db_parameters['deltaY'], db_parameters['deltaX'])
     menuMainWin.clear()
     menuMainWin.refresh()
-    x = 0
-    y = 0
-    for ch in db_parameters['menuHeader']:
-        key = menuServWin.getch()
-        if (key == curses.KEY_ENTER or key == ord(' ')) and myDelay == delayTime:
-            myDelay = delayTime/4
-        if ch == '\n':
-            y += 1
-            x = 0
-            continue
-        if db_parameters['isSound']:
-            prtSnd.play(loops=0, maxtime=int(myDelay))
-        menuServWin.addstr(y, x, ch, curses.color_pair(1)|curses.A_BOLD)
-        time.sleep(myDelay / 1000)
-        menuServWin.refresh()
-        x += 1
+    typeWriter(menuServWin, db_parameters['menuHeader'], delayTime)
     maxLen= 0
     rows = 0
     for menuItem in db_parameters['textMenu'].keys():
@@ -675,6 +636,62 @@ def menuScreen():
             menuMainWin.refresh()
             f = False
 
+def passScreen():
+    global db_parameters
+    global db_updated
+    global delayTime
+    curses.curs_set(2)
+    menuSel = []
+    passServWin = curses.newwin(4, 80, db_parameters['deltaY'], db_parameters['deltaX'])
+    passServWin.clear()
+    passServWin.refresh()
+    passServWin.nodelay(True)
+    passMainWin = curses.newwin(21, 80, 4+db_parameters['deltaY'], db_parameters['deltaX'])
+    passMainWin.clear()
+    passMainWin.refresh()
+    typeWriter(passServWin, db_parameters['passHeader'], delayTime)
+    passMainWin.refresh()
+    passMainWin.keypad(True)
+    passMainWin.nodelay(False)
+    curses.curs_set(0)
+    mssTime = millis()
+    passPhrase = ''
+    maxLen = max(len(db_parameters['passPart']), len(db_parameters['passFull']))
+    while True:
+        mscTime = millis()
+        if (mscTime >= (mssTime + 3000)):
+            mssTime = mscTime
+            # Читаем базу
+            if not db_parameters["isPowerOn"] or db_parameters["isLocked"]:
+                return
+            if db_updated:
+                db_updated = False
+                return
+        key = passMainWin.getch()
+        if key == curses.KEY_ENTER or key == 10 or key == 13:
+            db_parameters['isPassed'] = False
+            if passPhrase == db_parameters['passPart']:
+                db_parameters['wordLength'] = 6
+                updateDBParameters()
+                return ()
+#            elif passPhrase == db_parameters['passFull']:
+#                db_parameters['isHacked'] = True
+#                updateDBParameters()
+#                return ()
+            else:
+                return()
+        elif key == curses.KEY_BACKSPACE or key == 8:
+            passPhrase = passPhrase[:-1]
+            passMainWin.clear()
+            passMainWin.addstr(5, int((80 - maxLen) / 2), '*'*len(passPhrase), curses.color_pair(1) | curses.A_BOLD)
+            passMainWin.refresh()
+        else:
+            if len(passPhrase) < maxLen:
+                passPhrase = passPhrase + chr(key)
+                passMainWin.clear()
+                passMainWin.addstr(5, int((80-maxLen)/2), '*'*len(passPhrase), curses.color_pair(1)|curses.A_BOLD)
+                passMainWin.refresh()
+
 
 def startTerminal():
     #   Основной игровой цикл.
@@ -683,15 +700,16 @@ def startTerminal():
     global forceClose
     global prtSnd
     global wrdSnd
+    global lockTimeOutStart
     # Предыдущее состояние терминала. Если не совпадает с текущим - будет выполнена очистка и перерисовка экрана.
     # Unpowerd - нет питания. Locked  - заблокирован. Hacked - взломан. Normal - запитан, ждет взлома.
     previous_state = ""
     initCurses()
-    if db_parameters['isSound']:
-        pygame.mixer.pre_init(44100, -16, 2, 512)
-        pygame.mixer.init()
-        prtSnd = pygame.mixer.Sound('f3termprint.wav')
-        wrdSnd = pygame.mixer.Sound('f3termprint.wav')
+#    if db_parameters['isSound']:
+#        pygame.mixer.pre_init(44100, -16, 2, 512)
+#        pygame.mixer.init()
+#        prtSnd = pygame.mixer.Sound('f3termprint.wav')
+#        wrdSnd = pygame.mixer.Sound('f3termprint.wav')
     while True:
         db_updated = False
         if forceClose:
@@ -700,6 +718,11 @@ def startTerminal():
             pass
         # Проверяем: 1. Есть ли питание. 2. Не заблокирован ли терминал.
         # Если все в порядке, показываем игру. После взлома показываем меню.
+        if lockTimeOutStart!=0:
+            if (millis()-lockTimeOutStart) >= db_parameters["lockTimeOut"]*1000:
+                lockTimeOutStart = 0
+                db_parameters["isLocked"] = False
+                updateDBParameters()
         if not db_parameters["isPowerOn"]:
             if previous_state != "Unpowered":
                 outScreen('unPowerHeader', 0)
@@ -707,6 +730,7 @@ def startTerminal():
             time.sleep(dbCheckInterval)
         elif db_parameters["isLocked"]:
             if previous_state != "Locked":
+                lockTimeOutStart = millis()
                 outScreen('lockHeader', 0)
                 previous_state = "Locked"
         elif db_parameters["isHacked"]:
@@ -714,6 +738,10 @@ def startTerminal():
                 previous_state = "Hacked"
                 menuScreen()  # Здесь вызываем функцию после взлома
                 # forceClose = True   # Закрываем всё
+        elif db_parameters["isPassed"]:
+            previous_state = "Passed"
+            outScreen('startHeader', 3)
+            passScreen()
         else:
             # Взлом.
             previous_state = "Normal"
